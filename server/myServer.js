@@ -7,18 +7,21 @@ const PORT = 8080;
 
 const connectDB = require("./config/db");
 
-// middleware
+// middleware //
 app.use(cors());
 app.use(express.json());
 
-// connect DB
+// connect DB //
 connectDB();
 
-// routes
+// routes //
 const userRoutes = require("./routes/users");
 app.use("/api/users", userRoutes);
 
-// test route
+const taskRoutes = require("./routes/tasks");
+app.use("/api/tasks", taskRoutes);
+
+// test route //
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
