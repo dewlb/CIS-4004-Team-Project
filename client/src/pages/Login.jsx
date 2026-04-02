@@ -13,10 +13,26 @@ export function Login() {
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        if (!email || !password) return
+        if (!username || !password) return;
 
-        console.log("Login successful", data);
-        navigate("/dashboard");
+        try {
+            const res = await fetch("http://localhost:8080/api/users/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                console.log("Login successful", data.user);
+                navigate("/dashboard"); // redirect
+            } else {
+                setError(data.message || "Invalid credentials");
+            }
+        } catch (err) {
+            setError("Server error");
+        }
     };
 
     return (
@@ -39,7 +55,7 @@ export function Login() {
                 <Mail className="input-icon" />
                 <input
                     id="username"
-                    type="username"
+                    type="text"
                     placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}

@@ -15,7 +15,32 @@ export function Registration() {
     const handleRegistration = async (e) => {
         e.preventDefault();
 
-        alert("Registration successful!");
+        try {
+            const res = await fetch("http://localhost:8080/api/users", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    firstName,
+                    lastName,
+                    username,
+                    password
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                alert(errorData.message || "Registration failed");
+                return;
+            }
+
+            alert("Registration successful!");
+            navigate("/"); // go back to login
+
+        } catch (err) {
+            alert("Server error");
+        }
     };
 
     return (
@@ -40,7 +65,7 @@ export function Registration() {
                 <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
-                    id="firstname"
+                    id="firstName"
                     type="text"
                     placeholder="Enter your first name"
                     value={firstName}
@@ -55,7 +80,7 @@ export function Registration() {
                 <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
-                    id="lastname"
+                    id="lastName"
                     type="text"
                     placeholder="Enter your last name"
                     value={lastName}
@@ -71,7 +96,7 @@ export function Registration() {
                 <Mail className="input-icon" />
                 <input
                     id="username"
-                    type="username"
+                    type="text"
                     placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
