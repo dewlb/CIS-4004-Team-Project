@@ -13,7 +13,7 @@ export function Login() {
     const handleLogin = async (e) => {
         e.preventDefault();
 
-        if (!email || !password) return
+        if (!username || !password) return
 
         console.log("Login successful", data);
         navigate("/dashboard");
@@ -39,7 +39,7 @@ export function Login() {
                 <Mail className="input-icon" />
                 <input
                     id="username"
-                    type="username"
+                    type="text"
                     placeholder="Enter your username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}

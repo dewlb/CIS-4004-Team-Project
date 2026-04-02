@@ -11,9 +11,14 @@ router.get("/", async (req, res) => {
 
 // POST new user
 router.post("/", async (req, res) => {
-    const user = new User(req.body);
-    await user.save();
-    res.json(user);
+    try {
+        const user = new User(req.body);
+        await user.save();
+        res.status(201).json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ message: err.message });
+    }
 });
 
 module.exports = router;
