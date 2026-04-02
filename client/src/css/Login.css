@@ -84,7 +84,7 @@ html, body {
 .input-group label {
     font-size: 14px;
     font-weight: 500;
-    color: lightskyblue;
+    color: white;
 
 }
 
@@ -122,13 +122,13 @@ html, body {
     border: none;
     border-radius: 6px;
     color: white;
-    background: linear-gradient(to left, #c6c7ff, #ffffff);
+    background: linear-gradient(to left,  #4f54ff,  #4f54ff);
     cursor: pointer;
     transition: 0.3s;
 }
 
 .login-button:hover {
-    background: linear-gradient(to left, #dc143c, #dc143c);
+    background: linear-gradient(to left,  #4f54ff,  #4f54ff);
 }
 
 .footer-text {
@@ -140,7 +140,7 @@ html, body {
 }
 
 .footer-text a {
-    color: lightskyblue;
+    color: #95c3ff;
     text-decoration: none;
     font-weight: 600;
 
