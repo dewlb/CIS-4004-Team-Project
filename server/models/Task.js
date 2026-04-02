@@ -29,12 +29,20 @@ const taskSchema = new mongoose.Schema({
         ref: "Group"
     },
 
-    // Progress status of the task
-    status: {
-        type: String,
-        enum: ["pending", "completed"],
-        default: "pending"
-    },
+    // Student progress on this task
+    progress: [
+        {
+            student: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            },
+            status: {
+                type: String,
+                enum: ["todo", "in-progress", "done"],
+                default: "todo"
+            }
+        }
+    ],
 
     // Due date for the task
     dueDate: Date,
