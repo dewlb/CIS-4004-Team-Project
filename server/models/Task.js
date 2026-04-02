@@ -1,21 +1,18 @@
 const mongoose = require("mongoose");
 
 const taskSchema = new mongoose.Schema({
-    // Task information
     title: {
         type: String,
         required: true
     },
     description: String,
 
-    // Who created this task
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
     },
 
-    // Who is this assigned to
     assignedToUser: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
@@ -29,23 +26,28 @@ const taskSchema = new mongoose.Schema({
         ref: "Group"
     },
 
-    // Student progress on this task
-    progress: [
-        {
-            student: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "User"
-            },
-            status: {
-                type: String,
-                enum: ["todo", "in-progress", "done"],
-                default: "todo"
-            }
-        }
-    ],
+    status: {
+        type: String,
+        enum: ["to-do", "in-progress", "done"],
+        default: "pending"
+    },
 
-    // Due date for the task
-    dueDate: Date,
+    dueDate: Date
 }, { timestamps: true });
+
+
+// ENFORCE EXACTLY ONE ASSIGNMENT
+taskSchema.pre("save", function (next) {
+    const count =
+        (this.assignedToUser ? 1 : 0) +
+        (this.assignedToClass ? 1 : 0) +
+        (this.assignedToGroup ? 1 : 0);
+
+    if (count !== 1) {
+        return next(new Error("Task must be assigned to exactly one target (user, class, or group)"));
+    }
+
+    next();
+});
 
 module.exports = mongoose.model("Task", taskSchema, "Tasks");

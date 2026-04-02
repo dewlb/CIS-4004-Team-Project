@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const Task = require("../models/Task");
+const Class = require("../models/Class");   // needed for class checks
+const Group = require("../models/Group");   // needed for group checks
 
 const auth = require("../middleware/auth");
 const authorizeRoles = require("middleware/authorizeRoles");
@@ -16,6 +18,13 @@ router.post("/", auth, authorizeRoles("professor"), async (req, res) => {
   try {
     const { title, description, assignedToUser, assignedToClass, assignedToGroup, dueDate } = req.body;
 
+    const targets = [assignedToUser, assignedToClass, assignedToGroup].filter(Boolean);
+    if (targets.length !== 1) {
+      return res.status(400).json({
+        message: "Task must be assigned to exactly ONE of: user, class, or group"
+      });
+    }
+
     const task = await Task.create({
       title,
       description,
@@ -27,6 +36,7 @@ router.post("/", auth, authorizeRoles("professor"), async (req, res) => {
     });
 
     res.status(201).json(task);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -37,6 +47,13 @@ router.post("/", auth, authorizeRoles("professor"), async (req, res) => {
 router.put("/:id/assign", auth, authorizeRoles("professor"), async (req, res) => {
   try {
     const { assignedToUser, assignedToClass, assignedToGroup } = req.body;
+
+    const targets = [assignedToUser, assignedToClass, assignedToGroup].filter(Boolean);
+    if (targets.length !== 1) {
+      return res.status(400).json({
+        message: "Task must be assigned to exactly ONE of: user, class, or group"
+      });
+    }
 
     const task = await Task.findByIdAndUpdate(
       req.params.id,
@@ -53,6 +70,7 @@ router.put("/:id/assign", auth, authorizeRoles("professor"), async (req, res) =>
     }
 
     res.json(task);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -69,6 +87,7 @@ router.delete("/:id", auth, authorizeRoles("professor"), async (req, res) => {
     }
 
     res.json({ message: "Task deleted" });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -83,9 +102,9 @@ router.delete("/:id", auth, authorizeRoles("professor"), async (req, res) => {
 router.put("/:id/status", auth, authorizeRoles("student"), async (req, res) => {
   try {
     const { status } = req.body;
+    const userId = req.user._id.toString();
 
-    // enforce allowed values
-    if (!["pending", "completed"].includes(status)) {
+    if (!["to-do", "in-progress", "done"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
 
@@ -95,17 +114,32 @@ router.put("/:id/status", auth, authorizeRoles("student"), async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    const userId = req.user._id.toString();
+    let isAssigned = false;
 
-    // Check if student is assigned
-    const isAssigned =
-      (task.assignedToUser && task.assignedToUser.toString() === userId)
+    if (task.assignedToUser && task.assignedToUser.toString() === userId) {
+    isAssigned = true;
+    }
+
+    if (!isAssigned && task.assignedToClass) {
+    const classDoc = await Class.findById(task.assignedToClass);
+
+    if (classDoc?.students?.some(id => id.toString() === userId)) {
+        isAssigned = true;
+    }
+    }
+
+    if (!isAssigned && task.assignedToGroup) {
+    const groupDoc = await Group.findById(task.assignedToGroup);
+
+    if (groupDoc?.members?.some(id => id.toString() === userId)) {
+        isAssigned = true;
+    }
+    }
 
     if (!isAssigned) {
       return res.status(403).json({ message: "Not assigned to this task" });
     }
 
-    // Only update status
     task.status = status;
 
     await task.save();
@@ -128,14 +162,13 @@ router.get("/", auth, async (req, res) => {
     let tasks;
 
     if (req.user.role === "professor") {
-      // professor sees tasks they created
       tasks = await Task.find({ createdBy: req.user._id });
     } else {
-      // student sees assigned tasks
       tasks = await Task.find({ assignedToUser: req.user._id });
     }
 
     res.json(tasks);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -152,6 +185,7 @@ router.get("/:id", auth, async (req, res) => {
     }
 
     res.json(task);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
