@@ -19,7 +19,7 @@
 .registration-card {
     width: 100%;
     max-width: 25em;
-    background: rgba(255, 2090, 115 ,0.7);
+    background: rgba(6, 0, 29, 0.6); 
     backdrop-filter: blur(6px);
     border-radius: 12px;
     padding: 24px;
@@ -54,11 +54,11 @@
 .registration-header h1 {
     font-size: 24px;
     margin: 8px 0;
-    color: crimson;
+    color: white;
 }
 
 .registration-header p {
-    color: darkblue;
+    color: lightskyblue;
     font-size: 16px;
     font-weight: 600;
 }
@@ -72,7 +72,7 @@
 .input-group label {
     font-size: 14px;
     font-weight: 500;
-    color: darkblue;
+    color: white;
 
 }
 
@@ -110,14 +110,14 @@
     border: none;
     border-radius: 6px;
     color: white;
-    background: linear-gradient(to left, #dc143c, #dc143c);
+    background: linear-gradient(to left, #4f54ff, #4f54ff);
     cursor: pointer;
     transition: 0.3s;
     margin-top: 10px;
 }
 
 .registration-button:hover {
-    background: linear-gradient(to left, #dc143c, #dc143c);
+    background: linear-gradient(to left, #4f54ff, #4f54ff);
 }
 
 .footer-text {
@@ -125,11 +125,11 @@
     text-align: center;
     font-size: 14px;
     margin-top: 10px;
-    color: black;
+    color: white;
 }
 
 .footer-text a {
-    color: crimson;
+    color: #95c3ff;
     text-decoration: none;
     font-weight: 600;
 
