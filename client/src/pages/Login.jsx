@@ -6,7 +6,7 @@ import "../css/Login.css";
 
 export function Login() {
     const navigate = useNavigate();
-    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
@@ -34,15 +34,15 @@ export function Login() {
 
             <form onSubmit={handleLogin} className="login-form">
             <div className="input-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="username">Username</label>
                 <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="username"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                 />
                 </div>
