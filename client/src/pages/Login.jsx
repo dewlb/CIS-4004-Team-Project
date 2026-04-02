@@ -1,44 +1,46 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import UpIcon from "../assets/UpIcon.png";
 import "../css/Login.css";
+import { useNavigate } from "react-router-dom";
+
 
 export function Login() {
-    const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [userRole, setUserRole] = useState(""); // track role after login
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
-
         if (!username || !password) return;
 
         try {
-            const res = await fetch("http://localhost:8080/api/users/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
-            });
+        const res = await fetch("http://localhost:8080/api/users/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+        });
 
-            const data = await res.json();
+        const data = await res.json();
 
-            if (data.success) {
-                console.log("Login successful", data.user);
-                navigate("/dashboard"); // redirect
-            } else {
-                setError(data.message || "Invalid credentials");
-            }
+        if (data.success) {
+            console.log("Login successful", data.user);
+
+            if(data.user.role == "student") {navigate("/studentView");}
+        } else {
+            setError(data.message || "Invalid credentials");
+        }
         } catch (err) {
-            setError("Server error");
+        setError("Server error");
         }
     };
 
+    // Render login form if no role yet
     return (
         <div className="login-page">
         <div className="overlay" />
-
         <div className="login-card">
             <div className="login-header">
             <div className="icon-box">

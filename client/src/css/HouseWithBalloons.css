@@ -1,0 +1,50 @@
+import React from "react";
+import ""
+
+export function HouseWithBalloons({ balloonCount }) {
+    const colors = ["#FF3E4D", "#FFB200", "#4CD964", "#007AFF", "#5856D6"];
+
+    return (
+        <div className="house-container">
+        {/* Balloons */}
+        {Array.from({ length: balloonCount }).map((_, i) => {
+            const color = colors[i % colors.length];
+            const left = Math.random() * 80 + 10; // random horizontal %
+            const delay = Math.random() * 2;
+            return (
+            <div
+                key={i}
+                className="balloon animate-float"
+                style={{
+                backgroundColor: color,
+                left: `${left}%`,
+                animationDelay: `${delay}s`,
+                }}
+            />
+            );
+        })}
+
+        {/* Strings */}
+        {Array.from({ length: balloonCount }).map((_, i) => {
+            const left = Math.random() * 80 + 10;
+            return (
+            <div
+                key={`string-${i}`}
+                className="string"
+                style={{
+                left: `${left}%`,
+                }}
+            />
+            );
+        })}
+
+        {/* House */}
+        <div className="house">
+            <div className="roof" />
+        </div>
+
+        {/* Chimney */}
+        <div className="chimney" />
+        </div>
+    );
+}
