@@ -9,7 +9,7 @@ export function Registration() {
     const navigate = useNavigate();
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
 
     const handleRegistration = async (e) => {
@@ -66,15 +66,15 @@ export function Registration() {
             </div>
 
             <div className="input-group">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="username">Username</label>
                 <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="username"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                 />
                 </div>
