@@ -1,50 +1,456 @@
-import React from "react";
-import ""
+/* Container for house and balloons */
+.house-container {
+  position: relative;
+  width: 400px;
+  min-height: 600px;
+  margin: 0 auto;
+  overflow: visible;
+  background: linear-gradient(to bottom, #6ed6ff 0%, #bbecff 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: height 1.5s ease-out;
+}
 
-export function HouseWithBalloons({ balloonCount }) {
-    const colors = ["#FF3E4D", "#FFB200", "#4CD964", "#007AFF", "#5856D6"];
+/* Sky background with clouds */
+.sky-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: 
+    radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 35%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 30%);
+  pointer-events: none;
+}
 
-    return (
-        <div className="house-container">
-        {/* Balloons */}
-        {Array.from({ length: balloonCount }).map((_, i) => {
-            const color = colors[i % colors.length];
-            const left = Math.random() * 80 + 10; // random horizontal %
-            const delay = Math.random() * 2;
-            return (
-            <div
-                key={i}
-                className="balloon animate-float"
-                style={{
-                backgroundColor: color,
-                left: `${left}%`,
-                animationDelay: `${delay}s`,
-                }}
-            />
-            );
-        })}
+/* Ground */
+.ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, #8B7355 0%, #6B5345 100%);
+  z-index: 1;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
+}
 
-        {/* Strings */}
-        {Array.from({ length: balloonCount }).map((_, i) => {
-            const left = Math.random() * 80 + 10;
-            return (
-            <div
-                key={`string-${i}`}
-                className="string"
-                style={{
-                left: `${left}%`,
-                }}
-            />
-            );
-        })}
+/* Ground grass effect */
+.ground::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, #7CB342 0%, #689F38 50%, #558B2F 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 
-        {/* House */}
-        <div className="house">
-            <div className="roof" />
-        </div>
-
-        {/* Chimney */}
-        <div className="chimney" />
-        </div>
+/* Grass blades texture */
+.ground::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(85, 139, 47, 0.3) 3px,
+      rgba(85, 139, 47, 0.3) 4px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(124, 179, 66, 0.2) 2px,
+      rgba(124, 179, 66, 0.2) 3px
     );
+}
+
+/* Progress indicator */
+.progress-indicator {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 24px;
+  border-radius: 25px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  z-index: 10;
+  font-family: sans-serif;
+}
+
+.progress-text {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.progress-percentage {
+  font-size: 20px;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+/* House wrapper - handles the floating animation */
+.house-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 250px;
+  z-index: 5;
+}
+
+/* House base - Victorian style like in Up */
+.house {
+  position: absolute;
+  bottom: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 100px;
+  background: linear-gradient(to right, #f8b2ff, rgb(240, 173, 255) 42.86%, #98ffbd 44.12%, #8fffa5);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+/* Add siding texture */
+.house::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 6px,
+    rgba(139, 69, 19, 0.1) 6px,
+    rgba(139, 69, 19, 0.1) 8px
+  );
+  border-radius: 0 0 4px 4px;
+}
+
+/* Door */
+.house::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 28%;
+  transform: translateX(-50%);
+  width: 25px;
+  height: 45px;
+  background: linear-gradient(to bottom, #8B4513 0%, #6B3410 100%);
+  border-radius: 4px 4px 0 0;
+  border-color: white;
+  border-style: solid;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Roof - steep Victorian style */
+.roof {
+  width: 200px;
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-left-radius: 40px;
+  border-right: 65px solid transparent;
+  border-left: 65px solid transparent;
+  height: 0;
+  border-bottom:  60px solid #004995;;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Roof - steep Victorian style */
+.left-roof {
+  width: 100px;
+  position: absolute;
+  top: -75px;
+  left: 30%;
+  transform: translateX(-50%);
+  height: 0;
+  border-left: 65px solid transparent;
+  border-right: 65px solid transparent;
+  border-bottom: 60px solid #004995;;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+
+
+/* Roof shingles effect */
+.right-roof {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: -60px;
+  width: 120px;
+  height: 50px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(139, 0, 0, 0.2) 8px,
+    rgba(139, 0, 0, 0.2) 10px
+  );
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* Chimney */
+.roof::after {
+  content: '';
+  position: absolute;
+  top: -90px;
+  left: 82%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 65px solid transparent;
+  border-right: 65px solid rgba(221, 0, 0, 0);
+  border-bottom: 90px solid #f7ffa7;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  /* top: -20px; */
+  right: -40px;
+  width: 15px;
+  height: 35px;
+}
+
+.right-roof {
+  content: '';
+  position: absolute;
+  top: -90px;
+  left: 30%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-top-left-radius: 50px;
+  border-bottom: 40px solid rgb(251, 255, 117);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  /* top: -20px; */
+  right: -40px;
+  width: 60px;
+  height: 10px;
+}
+
+
+/* Windows - left window */
+.house .window-left {
+  position: absolute;
+  top: 25px;
+  left: 15px;
+  width: 28px;
+  height: 32px;
+  background: linear-gradient(135deg, #87CEEB 0%, #4A90A4 100%);
+  border: 3px solid white;
+  border-radius: 2px;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.house .window-upper {
+  position: absolute;
+  top: -70px;
+  right: 64px;
+  width: 28px;
+  height: 32px;
+  background: linear-gradient(135deg, #87CEEB 0%, #4A90A4 100%);
+  border: 3px solid white;
+  border-radius: 2px;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Windows - right window */
+.house .window-right1 {
+  position: absolute;
+  top: 25px;
+  right: 15px;
+  width: 28px;
+  height: 32px;
+  background: linear-gradient(135deg, #87CEEB 0%, #4A90A4 100%);
+  border: 3px solid white;
+  border-radius: 2px;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Windows - right window */
+.house .window-right3 {
+  position: absolute;
+  top: 25px;
+  right: 120px;
+  width: 28px;
+  height: 32px;
+  background: linear-gradient(135deg, #87CEEB 0%, #4A90A4 100%);
+  border: 3px solid white;
+  border-radius: 2px;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Windows - right window */
+.house .window-right2 {
+  position: absolute;
+  top: 25px;
+  right: 67px;
+  width: 28px;
+  height: 32px;
+  background: linear-gradient(135deg, #87CEEB 0%, #4A90A4 100%);
+  border: 3px solid white;
+  border-radius: 2px;
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Window cross dividers */
+.window-left::before,
+.window-right1::before,
+.window-right2::before,
+.window-right3::before,
+.window-upper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: white;
+  transform: translateY(-50%);
+}
+
+
+/* Balloon container - only the balloon rises */
+.balloon-container {
+  position: absolute;
+  bottom: 70px; /* Start inside house */
+  transform: translateX(-50%);
+}
+
+/* Balloon emergence animation */
+.balloon-emerge {
+  animation: emerge 2s ease-out forwards, float 4s ease-in-out infinite 2s;
+}
+
+@keyframes emerge {
+  0% {
+    bottom: 70px; /* Start inside house (around roof level) */
+    opacity: 0;
+    transform: translateX(-50%) scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    bottom: 250px; /* Final position above house */
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+
+
+/* Balloons */
+.balloon {
+  width: 45px;
+  height: 55px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-shadow: 
+    inset -8px -8px 0 rgba(0, 0, 0, 0.1),
+    inset 6px 6px 0 rgba(255, 255, 255, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Balloon highlight */
+.balloon::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  width: 12px;
+  height: 15px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+/* Balloon tie at bottom */
+.balloon::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: inherit;
+  border-radius: 50%;
+  filter: brightness(0.8);
+}
+
+/* Balloon strings - anchored to house, don't move */
+.string {
+  position: absolute;
+  bottom: 70px; /* Starts at house roof level */
+  transform: translateX(-50%);
+  width: 2px;
+  height: 0; /* Start with no height */
+  background: linear-gradient(to top, rgba(50, 50, 50, 0.6), rgba(50, 50, 50, 0.3));
+  z-index: 1;
+}
+
+.string-emerge {
+  animation: stringGrow 2s ease-out forwards;
+}
+
+@keyframes stringGrow {
+  0% {
+    height: 0;
+  }
+  100% {
+    height: 200px; 
+  }
+}
+
+
+/* Float animation - more realistic */
+@keyframes float {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0px);
+  }
+  25% {
+    transform: translateX(-50%) translateY(-15px);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-25px);
+  }
+  75% {
+    transform: translateX(-50%) translateY(-15px);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }
