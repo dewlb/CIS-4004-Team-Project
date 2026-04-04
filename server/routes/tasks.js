@@ -6,7 +6,7 @@ const Class = require("../models/Class");   // needed for class checks
 const Group = require("../models/Group");   // needed for group checks
 
 const auth = require("../middleware/auth");
-const authorizeRoles = require("middleware/authorizeRoles");
+const authorizeRoles = require("../middleware/authorizeRoles");
 
 
 // =============================

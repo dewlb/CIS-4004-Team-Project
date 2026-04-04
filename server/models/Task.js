@@ -29,7 +29,7 @@ const taskSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ["to-do", "in-progress", "done"],
-        default: "pending"
+        default: "to-do"
     },
 
     dueDate: Date
@@ -37,6 +37,7 @@ const taskSchema = new mongoose.Schema({
 
 
 // ENFORCE EXACTLY ONE ASSIGNMENT
+
 taskSchema.pre("save", function (next) {
     const count =
         (this.assignedToUser ? 1 : 0) +
@@ -46,8 +47,6 @@ taskSchema.pre("save", function (next) {
     if (count !== 1) {
         return next(new Error("Task must be assigned to exactly one target (user, class, or group)"));
     }
-
-    next();
 });
 
 module.exports = mongoose.model("Task", taskSchema, "Tasks");
