@@ -3,18 +3,13 @@ const router = express.Router();
 const Class = require("../models/Class");
 const User = require("../models/User");
 const Group = require("../models/Group");
-
+const auth = require("../middleware/auth");
 
 
 //gets all classes a student is in by username
-router.get("/", async (req, res) => {
+router.get("/", auth, async (req, res) => {
     try {
-        const { username } = req.query;
-        if (!username) {
-            return res.status(400).json({ error: "Username required" });
-        }
-
-        const user = await User.findOne({ username });
+        const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
@@ -31,14 +26,9 @@ router.get("/", async (req, res) => {
 });
 
 //get all classes taught by a professor
-router.get("/professor", async (req, res) => {
+router.get("/professor", auth, async (req, res) => {
     try {
-        const { username } = req.query;
-        if (!username) {
-            return res.status(400).json({ error: "Username required" });
-        }
-
-        const professor = await User.findOne({ username });
+        const professor = await User.findById(req.user.id);
         if (!professor) {
             return res.status(404).json({ error: "Professor not found" });
         }
@@ -53,11 +43,17 @@ router.get("/professor", async (req, res) => {
 });
 
 //get all groups in a class
-router.get("/:classId/groups", async (req, res) => {
+router.get("/:classId/groups", auth, async (req, res) => {
     try {
         const { classId } = req.params;
 
-        const classDoc = await Class.findById(classId).populate("groups");
+        const classDoc = await Class.findById(classId).populate({
+            path: "groups",
+            populate: {
+                path: "members",
+                select: "username"
+            }
+        })
         if (!classDoc) {
             return res.status(404).json({ error: "Class not found" });
         }
@@ -70,13 +66,11 @@ router.get("/:classId/groups", async (req, res) => {
 });
 
 //get student specific group
-router.get("/:classId/student-group", async (req, res) => {
+router.get("/:classId/student-group", auth, async (req, res) => {
     try {
         const { classId } = req.params;
-        const { username } = req.query;
-        if (!username) return res.status(400).json({ error: "Username required" });
 
-        const user = await User.findOne({ username });
+        const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const groups = await Group.find({
@@ -96,13 +90,11 @@ router.get("/:classId/student-group", async (req, res) => {
 });
 
 //student post to an existing class
-router.post("/join", async (req, res) => {
-    console.log("Join route hit", req.body);
+router.post("/join", auth, async (req, res) => {
     try {
-        const { classId, username } = req.body;
-        if (!classId || !username) return res.status(400).json({ error: "ClassId and username required" });
+        const { classId } = req.body;
 
-        const student = await User.findOne({ username });
+        const student = await User.findById(req.user.id);
         if (!student) return res.status(404).json({ error: "Student not found" });
 
         const classDoc = await Class.findById(classId);
@@ -120,16 +112,18 @@ router.post("/join", async (req, res) => {
     }
 });
 //professor adding or creating a new class
-router.post("/create", async (req, res) => {
+router.post("/create", auth, async (req, res) => {
     try {
-        const { name, professorUsername } = req.body;
+        const { name } = req.body;
 
-        if (!name || !professorUsername) {
-            return res.status(400).json({ error: "Name and professorUsername required" });
+        if (!name) {
+            return res.status(400).json({ error: "Class name required" });
         }
 
-        const professor = await User.findOne({ username: professorUsername });
-        if (!professor) return res.status(404).json({ error: "Professor not found" });
+        const professor = await User.findOne({ username: req.user.username });
+        if (!professor) {
+            return res.status(404).json({ error: "Professor not found" });
+        }
 
         const newClass = new Class({
             name,
@@ -148,17 +142,14 @@ router.post("/create", async (req, res) => {
 });
 
 //prof deletes a class and asscoated groups 
-router.delete("/:classId", async (req, res) => {
+router.delete("/:classId", auth, async (req, res) => {
     try {
         const { classId } = req.params;
-        const { professorUsername } = req.body;
 
-        if (!professorUsername) {
-            return res.status(400).json({ error: "Professor username required" });
+        const professor = await User.findById(req.user.id);
+        if (!professor) {
+            return res.status(404).json({ error: "Professor not found" });
         }
-
-        const professor = await User.findOne({ username: professorUsername });
-        if (!professor) return res.status(404).json({ error: "Professor not found" });
 
         const classDoc = await Class.findById(classId);
         if (!classDoc) return res.status(404).json({ error: "Class not found" });

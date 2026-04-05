@@ -16,6 +16,7 @@ root.render(
         <Route path="/" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
         <Route path="/studentView" element={<StudentDashboard />} />
+        <Route path="/professorView" element={<ProfessorDashboard />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

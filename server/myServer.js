@@ -24,6 +24,9 @@ app.use("/api/tasks", taskRoutes);
 const classRoutes = require("./routes/classes");
 app.use("/api/classes", classRoutes);
 
+const groupRoutes = require("./routes/groups");
+app.use("/api/groups", groupRoutes);
+
 // test route //
 app.get('/', (req, res) => {
     res.send('API is running...');

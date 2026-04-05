@@ -32,7 +32,7 @@ router.post("/", auth, authorizeRoles("professor"), async (req, res) => {
       assignedToClass,
       assignedToGroup,
       dueDate,
-      createdBy: req.user._id
+      createdBy: req.user.id
     });
 
     res.status(201).json(task);
@@ -162,7 +162,7 @@ router.get("/", auth, async (req, res) => {
     let tasks;
 
     if (req.user.role === "professor") {
-      tasks = await Task.find({ createdBy: req.user._id });
+      tasks = await Task.find({ createdBy: req.user.id });
     } else {
       tasks = await Task.find({ assignedToUser: req.user._id });
     }
