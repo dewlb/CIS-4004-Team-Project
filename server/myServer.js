@@ -27,6 +27,9 @@ app.use("/api/classes", classRoutes);
 const groupRoutes = require("./routes/groups");
 app.use("/api/groups", groupRoutes);
 
+const badgeRoutes = require("./routes/badges");
+app.use("/api/badges", badgeRoutes);
+
 // test route //
 app.get('/', (req, res) => {
     res.send('API is running...');
