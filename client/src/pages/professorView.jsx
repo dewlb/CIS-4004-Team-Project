@@ -93,6 +93,22 @@ export function ProfessorDashboard() {
     }, []);
 
     // =============================
+    // FETCH TASKS FOR CLASS
+    // =============================
+    const fetchTasks = async (classId) => {
+        try {
+            const res = await fetch(`/api/tasks?classId=${classId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await parseJSON(res);
+            if (res.ok) setTasks(data || []);
+            else toast.error("Failed to load tasks");
+        } catch (err) {
+            console.error("Error fetching tasks:", err);
+        }
+    };
+
+    // =============================
     // SELECT CLASS
     // =============================
     const handleSelectClass = async (cls, focus) => {
@@ -112,6 +128,12 @@ export function ProfessorDashboard() {
 
             setSelectedClass({ ...fullClass, groups: groupsData });
             setGroups(groupsData);
+
+            setSelectedClass({ ...fullClass, groups: groupsData });
+            setGroups(groupsData);
+
+            // NEW: fetch tasks for this class
+            fetchTasks(cls._id);
 
             if (focus === "students") {
                 setFocus("students");
@@ -218,34 +240,56 @@ export function ProfessorDashboard() {
     // =============================
     // CREATE TASK
     // =============================
-    const createTask = async (groupId) => {
-        const input = taskInputs[groupId];
-        if (!input?.title) return;
+    const createTask = async (targetId, type = "group") => {
+        console.log("🟢 createTask called", { targetId, type });
+        console.log("Current taskInputs:", taskInputs);
 
-        const res = await fetch("/api/tasks", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                title: input.title,
-                description: input.description || "",
-                assignedToGroup: groupId
-            })
-        });
+        const input = taskInputs[targetId];
+        console.log("Input for this target:", input);
 
-        const data = await parseJSON(res);
+        if (!input?.title) {
+            console.log("No title provided, skipping creation");
+            return;
+        }
 
-        if (res.ok) {
-            toast.success("Task created!");
-            setTaskInputs(prev => ({
-                ...prev,
-                [groupId]: { title: "", description: "" }
-            }));
-            handleSelectClass(selectedClass); // refresh
-        } else {
-            toast.error(data?.message);
+        const body = {
+            title: input.title,
+            description: input.description || ""
+        };
+
+        if (type === "group") body.assignedToGroup = targetId;
+        if (type === "class") body.assignedToClass = targetId;
+
+        console.log("Request body to send:", body);
+
+        try {
+            const res = await fetch("/api/tasks", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            console.log("Response status:", res.status);
+
+            const data = await res.json();
+            console.log("Response data:", data);
+
+            if (res.ok) {
+                toast.success("Task created!");
+                setTaskInputs(prev => ({
+                    ...prev,
+                    [targetId]: { title: "", description: "" }
+                }));
+                handleSelectClass(selectedClass); // refresh
+            } else {
+                toast.error(data?.message || "Failed to create task");
+            }
+        } catch (err) {
+            console.error("Error creating task:", err);
+            toast.error("Error creating task");
         }
     };
 
@@ -531,6 +575,78 @@ export function ProfessorDashboard() {
                             </div>
                         </div>
 
+                        {/* ================= CLASS TASK CREATION ================= */}
+                        <div className="form-group" style={{ marginTop: '1rem' }}>
+                            <h3>📝 Create Task for Entire Class</h3>
+                            <input
+                                placeholder="Task title"
+                                value={taskInputs[selectedClass._id]?.title || ""}
+                                onChange={(e) =>
+                                    setTaskInputs(prev => ({
+                                        ...prev,
+                                        [selectedClass._id]: {
+                                            ...(prev[selectedClass._id] || {}),
+                                            title: e.target.value
+                                        }
+                                    }))
+                                }
+                                style={{ marginBottom: '0.75rem' }}
+                            />
+                            <input
+                                placeholder="Description"
+                                value={taskInputs[selectedClass._id]?.description || ""}
+                                onChange={(e) =>
+                                    setTaskInputs(prev => ({
+                                        ...prev,
+                                        [selectedClass._id]: {
+                                            ...(prev[selectedClass._id] || {}),
+                                            description: e.target.value
+                                        }
+                                    }))
+                                }
+                                style={{ marginBottom: '0.75rem' }}
+                            />
+                            <button
+                                onClick={() => createTask(selectedClass._id, "class")} // ✅ explicitly set type to "class"
+                                className="btn-secondary"
+                            >
+                                <Plus size={16} /> Create Task
+                            </button>
+                        </div>
+
+                        {/* ================= CLASS TASK LIST ================= */}
+                        <div className="card" style={{ marginTop: '1rem' }}>
+                            <div className="card-content">
+                                <h3>📋 Class Tasks</h3>
+                                {tasks.filter(t => t.assignedToClass === selectedClass._id).length === 0 ? (
+                                    <p className="empty-state" style={{ padding: '1rem' }}>
+                                        No tasks assigned to this class
+                                    </p>
+                                ) : (
+                                    <div className="task-items">
+                                        {tasks
+                                            .filter(t => t.assignedToClass === selectedClass._id)
+                                            .map(task => (
+                                                <div key={task._id} className="task-item">
+                                                    <div className="task-info">
+                                                        <div className="task-title">{task.title}</div>
+                                                        <div className={`task-status ${task.status}`}>
+                                                            Status: {task.status}
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => deleteTask(task._id)}
+                                                        className="btn-danger"
+                                                    >
+                                                        <Trash2 size={14} /> Delete
+                                                    </button>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="card">
                             <div className="card-content">
                                 <h3>Groups in this Class</h3>
@@ -621,7 +737,7 @@ export function ProfessorDashboard() {
                                                             setTaskInputs(prev => ({
                                                                 ...prev,
                                                                 [group._id]: {
-                                                                    ...prev[group._id],
+                                                                    ...(prev[group._id] || {}),
                                                                     title: e.target.value
                                                                 }
                                                             }))
