@@ -5,6 +5,9 @@
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #F0E6D2 100%);
+  background-image: url('../assets/UpBackground.png');
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 /* Header - Adventure Book Theme */

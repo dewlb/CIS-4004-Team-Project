@@ -504,16 +504,14 @@ export function StudentDashboard() {
                                         </p>
                                     )}
                                 </div>
-                            </div>
-                            
-                            {/* Groups under this class */}
+                                {/* Groups under this class */}
                             {cls.groups && cls.groups.length > 0 && (
                                 <div className="groups-section" style={{ marginLeft: '20px', marginTop: '10px' }}>
                                     {cls.groups.map(grp => (
                                         <div key={grp.id} className="task-card task-card-group">
                                             <div className="task-card-texture task-card-texture-group" />
                                             <div className="task-card-content">
-                                                <h3 className="task-card-header task-card-header-group">👥 {grp.name}</h3>
+                                                <h3 className="task-card-header task-card-header-group"> Group: {grp.name}</h3>
                                                 {grp.tasks.length > 0 ? (
                                                     <ul className="task-list">
                                                         {grp.tasks.map(task => (
@@ -542,6 +540,9 @@ export function StudentDashboard() {
                                     ))}
                                 </div>
                             )}
+                            </div>
+                            
+                    
                         </div>
                     ))}
                         </div>
