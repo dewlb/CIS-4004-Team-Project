@@ -125,6 +125,7 @@ html, body {
     background: linear-gradient(to left,  #4f54ff,  #4f54ff);
     cursor: pointer;
     transition: 0.3s;
+    display: grid;
 }
 
 .login-button:hover {
