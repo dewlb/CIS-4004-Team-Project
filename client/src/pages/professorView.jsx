@@ -731,6 +731,8 @@ export function ProfessorDashboard() {
                                                 <div className="form-group">
                                                     <h4>📝 Create Task</h4>
                                                     <input
+
+                                                        className="task-input"
                                                         placeholder="Task title"
                                                         value={taskInputs[group._id]?.title || ""}
                                                         onChange={(e) =>
@@ -742,9 +744,9 @@ export function ProfessorDashboard() {
                                                                 }
                                                             }))
                                                         }
-                                                        style={{ marginBottom: '0.75rem' }}
                                                     />
                                                     <input
+                                                        className="task-input"
                                                         placeholder="Description"
                                                         value={taskInputs[group._id]?.description || ""}
                                                         onChange={(e) =>
@@ -803,10 +805,17 @@ export function ProfessorDashboard() {
                     </>
                 )}
                 {deleteModal.open && (
-                    <div className="modal-overlay">
-                        <div className="modal">
+                    <div
+                        className="modal-overlay"
+                        onClick={() => setDeleteModal({ open: false, classId: null })}
+                    >
+                        <div
+                        className="modal"
+                        onClick={(e) => e.stopPropagation()} // prevents closing when clicking inside
+                        >
                         <h3>Delete Class?</h3>
                         <p>This action cannot be undone.</p>
+
                         <div className="button-group">
                             <button
                             className="btn-danger"
@@ -817,6 +826,7 @@ export function ProfessorDashboard() {
                             >
                             Confirm Delete
                             </button>
+
                             <button
                             className="btn-secondary"
                             onClick={() => setDeleteModal({ open: false, classId: null })}
@@ -826,7 +836,7 @@ export function ProfessorDashboard() {
                         </div>
                         </div>
                     </div>
-                    )}
+                )}
             </main>
         </div>
     );

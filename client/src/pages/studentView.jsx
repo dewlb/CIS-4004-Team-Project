@@ -443,17 +443,17 @@ export function StudentDashboard() {
 
                 <div className="stats-grid">
                     <div className="stat-card stat-card-adventures">
-                        <p className="stat-label">📚 Adventures</p>
+                        <p className="stat-label">📚 Adventures (Classes)</p>
                         <h2 className="stat-value">{classes.length}</h2>
                     </div>
                     <div className="stat-card stat-card-teams">
-                        <p className="stat-label">👥 Expedition Teams</p>
+                        <p className="stat-label">👥 Expedition Teams (Groups)</p>
                         <h2 className="stat-value">
                             {classes.reduce((acc, cls) => acc + (cls.groups?.length || 0), 0)}
                         </h2>
                     </div>
                     <div className="stat-card stat-card-quests">
-                        <p className="stat-label">🗺️ Quests</p>
+                        <p className="stat-label">🗺️ Quests (Tasks)</p>
                         <h2 className="stat-value">
                             {classes.reduce((acc, cls) => {
                                 const classTasks = cls.tasks.length;
