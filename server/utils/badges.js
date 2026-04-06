@@ -4,6 +4,9 @@ const availableBadges = [
     { id: "b3", name: "Perseverance", tasksRequired: 5, icon: "⛰️", color: "#4ECDC4" },
     { id: "b4", name: "Adventure", tasksRequired: 7, icon: "🎈", color: "#95E1D3" },
     { id: "b5", name: "Ellie Badge", tasksRequired: 10, icon: "🏆", color: "#C44536" },
+    { id: "b6", name: "Determination", tasksRequired: 25, icon: "🔥", color: "#e91acd" },
+    { id: "b7", name: "Strength", tasksRequired: 50, icon: "💪", color: "#39eb29" },
+    { id: "b8", name: "Knowledge", tasksRequired: 100, icon: "🧠", color: "#4b0b35" },
 ];
 
 module.exports = availableBadges;

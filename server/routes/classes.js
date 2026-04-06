@@ -16,7 +16,7 @@ router.get("/", auth, async (req, res) => {
 
         const classes = await Class.find({
             students: user._id
-        });
+        }).populate("students", "username");
 
         res.json(classes);
 
@@ -33,7 +33,7 @@ router.get("/professor", auth, async (req, res) => {
             return res.status(404).json({ error: "Professor not found" });
         }
 
-        const classes = await Class.find({ professorId: professor._id });
+        const classes = await Class.find({ professorId: professor._id }).populate("students", "username");
 
         res.json(classes);
 
