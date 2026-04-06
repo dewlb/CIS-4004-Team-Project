@@ -172,9 +172,21 @@
   align-items: flex-start;
 }
 
+.input-with-button input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #D4A574;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
 .input-with-button input,
 .input-with-button .searchable-dropdown {
   flex: 1;
+    
 }
 
 .professor-dashboard input[type="text"],
@@ -349,6 +361,25 @@ button {
   border: 1px solid #E5E5E5;
   border-radius: 0.5rem;
   transition: all 0.2s ease;
+}
+
+
+.task-input {
+  margin-bottom: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #D4A574;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+  max-width: 40em;
+}
+
+.task-input:focus {
+  outline: none;
+  border-color: #b88a5a;
 }
 
 .task-item:hover {

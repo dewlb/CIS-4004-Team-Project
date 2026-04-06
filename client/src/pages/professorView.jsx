@@ -615,6 +615,8 @@ export function ProfessorDashboard() {
                                                 <div className="form-group">
                                                     <h4>📝 Create Task</h4>
                                                     <input
+
+                                                        className="task-input"
                                                         placeholder="Task title"
                                                         value={taskInputs[group._id]?.title || ""}
                                                         onChange={(e) =>
@@ -626,9 +628,9 @@ export function ProfessorDashboard() {
                                                                 }
                                                             }))
                                                         }
-                                                        style={{ marginBottom: '0.75rem' }}
                                                     />
                                                     <input
+                                                        className="task-input"
                                                         placeholder="Description"
                                                         value={taskInputs[group._id]?.description || ""}
                                                         onChange={(e) =>

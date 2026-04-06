@@ -15,7 +15,6 @@
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 48px;
 }
 
 .dropdown-trigger:hover {
@@ -61,7 +60,6 @@
 }
 
 .dropdown-menu {
-  position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
   right: 0;
