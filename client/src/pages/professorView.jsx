@@ -429,7 +429,7 @@ export function ProfessorDashboard() {
 
                                         {selectedClass.students?.length > 0 ? (
                                         <div className="group-members">
-                                            {selectedClass.students.map((student, i) => (
+                                            {selectedClass.students?.filter(student => student.role !== "professor").map((student, i) => (
                                             <div key={student._id ?? i} className="member-badge">
                                                 <Users size={14} />
                                                 {student.username ?? student}
