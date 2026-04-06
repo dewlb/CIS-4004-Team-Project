@@ -598,7 +598,7 @@ export function ProfessorDashboard() {
                                                                 }))
                                                             }
                                                             placeholder="Select a student..."
-                                                            students={selectedClass.students || []}
+                                                            students={students}
                                                             isLoading={isLoadingStudents}
                                                         />
                                                         <button 
