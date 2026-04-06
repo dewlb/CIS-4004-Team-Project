@@ -89,19 +89,34 @@ router.get("/:classId/student-group", auth, async (req, res) => {
     }
 });
 
-//student post to an existing class
+// student joins OR professor adds a student
 router.post("/join", auth, async (req, res) => {
     try {
-        const { classId } = req.body;
-
-        const student = await User.findById(req.user.id);
-        if (!student) return res.status(404).json({ error: "Student not found" });
+        const { classId, username } = req.body; // professor may send a username
 
         const classDoc = await Class.findById(classId);
         if (!classDoc) return res.status(404).json({ error: "Class not found" });
 
-        if (!classDoc.students.includes(student._id)) {
-            classDoc.students.push(student._id);
+        const userToAdd = username
+            ? await User.findOne({ username })
+            : await User.findById(req.user.id); // student joins self
+
+        if (!userToAdd) return res.status(404).json({ error: "User not found" });
+
+        // Only allow professors to add other users
+        if (userToAdd._id.toString() !== req.user.id) {
+            const professor = await User.findById(req.user.id);
+            if (!professor || professor.role !== "professor") {
+                return res.status(403).json({ error: "Only professors can add other students" });
+            }
+            // Optional: check professor owns the class
+            if (!classDoc.professorId.equals(professor._id)) {
+                return res.status(403).json({ error: "You can only add students to your own class" });
+            }
+        }
+
+        if (!classDoc.students.includes(userToAdd._id)) {
+            classDoc.students.push(userToAdd._id);
             await classDoc.save();
         }
 
@@ -111,6 +126,35 @@ router.post("/join", auth, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Remove a student from a class
+router.delete("/:classId/remove-student/:studentId", auth, async (req, res) => {
+    try {
+        const { classId, studentId } = req.params;
+
+        // Find the professor making the request
+        const professor = await User.findById(req.user.id);
+        if (!professor) return res.status(404).json({ error: "Professor not found" });
+
+        // Find the class
+        const classDoc = await Class.findById(classId);
+        if (!classDoc) return res.status(404).json({ error: "Class not found" });
+
+        // Ensure this professor owns the class
+        if (!classDoc.professorId.equals(professor._id)) {
+            return res.status(403).json({ error: "You can only modify your own classes" });
+        }
+
+        // Remove the student
+        classDoc.students = classDoc.students.filter(id => id.toString() !== studentId);
+        await classDoc.save();
+
+        res.json({ message: "Student removed from class", class: classDoc });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 //professor adding or creating a new class
 router.post("/create", auth, async (req, res) => {
     try {

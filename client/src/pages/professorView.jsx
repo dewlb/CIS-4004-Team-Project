@@ -95,29 +95,32 @@ export function ProfessorDashboard() {
     // =============================
     // SELECT CLASS
     // =============================
-    const handleSelectClass = async (cls) => {
-    setSelectedClass(cls);
-
-    try {
-        const [groupRes, taskRes] = await Promise.all([
-            fetch(`/api/classes/${cls._id}/groups`, {
+    const handleSelectClass = async (cls, focus) => {
+        try {
+            const res = await fetch(`/api/classes/${cls._id}/groups`, {
                 headers: { Authorization: `Bearer ${token}` }
-            }),
-            fetch("/api/tasks", {
+            });
+
+            const groupsData = await res.json();
+
+            // Refetch full class info, including students
+            const classRes = await fetch(`/api/classes/professor`, {
                 headers: { Authorization: `Bearer ${token}` }
-            })
-        ]);
+            });
+            const classesList = await classRes.json();
+            const fullClass = classesList.find(c => c._id === cls._id);
 
-        const groupsData = await parseJSON(groupRes);
-        const taskData = await parseJSON(taskRes);
+            setSelectedClass({ ...fullClass, groups: groupsData });
+            setGroups(groupsData);
 
-        if (groupRes.ok) setGroups(groupsData || []);
-        if (taskRes.ok) setTasks(taskData || []);
+            if (focus === "students") {
+                setFocus("students");
+            }
 
-    } catch (err) {
-        console.error(err);
-    }
-};
+        } catch (err) {
+            console.error("Error fetching class details:", err);
+        }
+    };
 
     // =============================
     // CREATE CLASS
@@ -271,26 +274,32 @@ export function ProfessorDashboard() {
     const addStudent = async () => {
         if (!studentUsername) return;
 
-        const res = await fetch("/api/classes/join", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                classId: selectedClass._id,
-                username: studentUsername
-            })
-        });
+        try {
+            const res = await fetch("/api/classes/join", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    classId: selectedClass._id,
+                    username: studentUsername
+                })
+            });
 
-        const data = await parseJSON(res);
+            const data = await res.json();
 
-        if (res.ok) {
-            toast.success("Student added!");
-            setStudentUsername("");
-            fetchClasses();
-        } else {
-            toast.error(data?.error);
+            if (res.ok) {
+                toast.success("Student added!");
+                setStudentUsername("");
+                // Refresh the selected class to show new student
+                handleSelectClass(selectedClass);
+            } else {
+                toast.error(data?.error || "Failed to add student");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Error adding student");
         }
     };
 
@@ -321,6 +330,36 @@ export function ProfessorDashboard() {
         }
     };
 
+    // =============================
+    // REMOVE STUDENT FROM CLASS
+    // =============================
+    const removeStudent = async (studentId) => {
+        if (!selectedClass || !studentId) return;
+
+        try {
+            const res = await fetch(`/api/classes/${selectedClass._id}/remove-student/${studentId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await res.json(); // parseJSON or res.json()
+
+            if (res.ok) {
+                toast.success("Student removed from class!");
+                // Refresh the selected class to update the student list
+                handleSelectClass(selectedClass);
+            } else {
+                toast.error(data?.error || "Failed to remove student");
+            }
+        } catch (err) {
+            console.error("Error removing student:", err);
+            toast.error("Error removing student");
+        }
+    };
+    
     const handleLogout = () => {
         localStorage.removeItem("token");
         window.location.href = "/";
