@@ -183,6 +183,7 @@
   font-family: inherit;
   transition: all 0.2s ease;
   background: white;
+  color: black;
 }
 
 .input-with-button input,
@@ -376,6 +377,7 @@ button {
     transition: all 0.2s ease;
     background: white;
     width: 93%;
+    color: black;
 }
 
 .task-input:focus {
