@@ -164,12 +164,31 @@ router.get("/", auth, async (req, res) => {
     if (req.user.role === "professor") {
       tasks = await Task.find({ createdBy: req.user.id });
     } else {
-      tasks = await Task.find({ assignedToUser: req.user._id });
+      // For students, get tasks assigned to them directly, their classes, and their groups
+      const userId = req.user._id;
+      
+      // Find all classes the student is in
+      const studentClasses = await Class.find({ students: userId });
+      const classIds = studentClasses.map(c => c._id);
+      
+      // Find all groups the student is in
+      const studentGroups = await Group.find({ members: userId });
+      const groupIds = studentGroups.map(g => g._id);
+      
+      // Get all tasks assigned to user, their classes, or their groups
+      tasks = await Task.find({
+        $or: [
+          { assignedToUser: userId },
+          { assignedToClass: { $in: classIds } },
+          { assignedToGroup: { $in: groupIds } }
+        ]
+      });
     }
 
     res.json(tasks);
 
   } catch (err) {
+    console.error('Error fetching tasks:', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -3,17 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { BookOpen, Users, LogOut, Clock, Award, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { HouseWithBalloons } from "../components/HouseWithBalloons";
+import api from "../utils/api";
 import "../css/studentView.css";
-
-// Mock Data
-const initialClasses = [
-    { id: "1", name: "Mobile Development", tasks: [{ id: "t1", title: "Build React Native app", completed: false }] },
-    { id: "2", name: "Web Development", tasks: [{ id: "t2", title: "Setup React Router", completed: true }] },
-];
-
-const initialGroups = [
-    { id: "g1", name: "Team Alpha", tasks: [{ id: "gt1", title: "Project proposal", completed: false }] },
-];
 
 const availableBadges = [
     { id: "b1", name: "Assistance", tasksRequired: 1, icon: "🤝", color: "#FFD700", description: "Helped complete your first task!" },
@@ -25,12 +16,119 @@ const availableBadges = [
 
 export function StudentDashboard() {
     const navigate = useNavigate();
-    const [classes, setClasses] = useState(initialClasses);
-    const [groups, setGroups] = useState(initialGroups);
+    const [classes, setClasses] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [weeklyCompletedTasks, setWeeklyCompletedTasks] = useState(0);
     const [earnedBadges, setEarnedBadges] = useState([]);
     const [weeklyGoal] = useState(10);
     const [lastResetDate, setLastResetDate] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch data from API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                
+                // Fetch classes
+                const classesData = await api.getClasses();
+                
+                // Fetch all tasks
+                const tasksData = await api.getTasks();
+                
+                // Fetch groups for each class
+                const allGroups = [];
+                for (const cls of classesData) {
+                    try {
+                        const groupData = await api.getStudentGroup(cls._id);
+                        allGroups.push(...groupData);
+                    } catch (err) {
+                        // Student might not be in a group for this class
+                        console.log(`No group found for class ${cls._id}`);
+                    }
+                }
+                
+                // Organize tasks by class and group - nest groups under classes
+                const classesWithTasksAndGroups = classesData.map(cls => {
+                    // Get class-level tasks
+                    const classTasks = tasksData.filter(task => {
+                        const assignedClass = task.assignedToClass;
+                        const classId = cls._id;
+                        return assignedClass && (
+                            assignedClass === classId || 
+                            assignedClass.toString() === classId.toString()
+                        );
+                    });
+                    
+                    // Get groups that belong to this class
+                    const classGroups = allGroups.filter(grp => 
+                        grp.classId.toString() === cls._id.toString()
+                    );
+                    
+                    // Add tasks to each group
+                    const groupsWithTasks = classGroups.map(grp => {
+                        const groupTasks = tasksData.filter(task => {
+                            const assignedGroup = task.assignedToGroup;
+                            const groupId = grp._id;
+                            return assignedGroup && (
+                                assignedGroup === groupId || 
+                                assignedGroup.toString() === groupId.toString()
+                            );
+                        });
+                        
+                        return {
+                            id: grp._id,
+                            name: grp.name,
+                            classId: grp.classId,
+                            tasks: groupTasks.map(task => ({
+                                id: task._id,
+                                title: task.title,
+                                description: task.description,
+                                completed: task.status === 'done',
+                                status: task.status,
+                                dueDate: task.dueDate,
+                            }))
+                        };
+                    });
+                    
+                    return {
+                        id: cls._id,
+                        name: cls.name,
+                        tasks: classTasks.map(task => ({
+                            id: task._id,
+                            title: task.title,
+                            description: task.description,
+                            completed: task.status === 'done',
+                            status: task.status,
+                            dueDate: task.dueDate,
+                        })),
+                        groups: groupsWithTasks
+                    };
+                });
+                
+                setClasses(classesWithTasksAndGroups);
+                setGroups([]); // No longer needed as separate state
+                
+                // Fetch badges from server
+                try {
+                    const badgesData = await api.getBadges();
+                    setEarnedBadges(badgesData);
+                } catch (err) {
+                    console.error('Error fetching badges:', err);
+                }
+                
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching data:', err);
+                setError(err.message);
+                setLoading(false);
+                toast.error('Failed to load dashboard data');
+            }
+        };
+        
+        fetchData();
+    }, []);
 
     // Check if we need to reset on Sunday at 11:59 PM
     useEffect(() => {
@@ -122,17 +220,26 @@ export function StudentDashboard() {
         return () => clearInterval(checkInterval);
     }, []);
 
-    const incrementBalloonCount = () => {
+    const incrementBalloonCount = async () => {
         const newCount = weeklyCompletedTasks + 1;
         setWeeklyCompletedTasks(newCount);
         localStorage.setItem('weeklyCompletedTasks', newCount.toString());
         
-        const nextBadge = availableBadges.find(b => newCount >= b.tasksRequired && !earnedBadges.some(eb => eb.id === b.id));
-        if (nextBadge) {
-            const updatedBadges = [...earnedBadges, nextBadge];
-            setEarnedBadges(updatedBadges);
-            localStorage.setItem('earnedBadges', JSON.stringify(updatedBadges));
-            toast.success(`🎉 Badge Earned: ${nextBadge.icon} ${nextBadge.name}!`);
+        // Check for new badges from server
+        try {
+            const result = await api.checkBadges();
+            if (result.newBadges && result.newBadges.length > 0) {
+                // Fetch updated badges
+                const badgesData = await api.getBadges();
+                setEarnedBadges(badgesData);
+                
+                // Show toast for each new badge
+                result.newBadges.forEach(badge => {
+                    toast.success(`🎉 Badge Earned: ${badge.icon} ${badge.name}!`);
+                });
+            }
+        } catch (err) {
+            console.error('Error checking badges:', err);
         }
         
         if (newCount === weeklyGoal) {
@@ -146,47 +253,87 @@ export function StudentDashboard() {
         localStorage.setItem('weeklyCompletedTasks', newCount.toString());
     };
 
-    const toggleTask = (listType, itemId, taskId) => {
+    const toggleTask = async (listType, itemId, taskId) => {
+        // Find the current task status
+        let currentTask;
         if (listType === "class") {
-            setClasses(classes.map(cls => {
-                if (cls.id === itemId) {
-                    return {
-                        ...cls,
-                        tasks: cls.tasks.map(t => {
-                            if (t.id === taskId) {
-                                if (!t.completed) {
-                                    incrementBalloonCount();
-                                } else {
-                                    decrementBalloonCount();
-                                }
-                                return { ...t, completed: !t.completed };
-                            }
-                            return t;
-                        }),
-                    };
-                }
-                return cls;
-            }));
+            const cls = classes.find(c => c.id === itemId);
+            currentTask = cls?.tasks.find(t => t.id === taskId);
         } else {
-            setGroups(groups.map(grp => {
-                if (grp.id === itemId) {
-                    return {
-                        ...grp,
-                        tasks: grp.tasks.map(t => {
-                            if (t.id === taskId) {
-                                if (!t.completed) {
-                                    incrementBalloonCount();
-                                } else {
-                                    decrementBalloonCount();
-                                }
-                                return { ...t, completed: !t.completed };
-                            }
-                            return t;
-                        }),
-                    };
+            // For groups, find the class first, then the group
+            for (const cls of classes) {
+                const grp = cls.groups?.find(g => g.id === itemId);
+                if (grp) {
+                    currentTask = grp.tasks.find(t => t.id === taskId);
+                    break;
                 }
-                return grp;
-            }));
+            }
+        }
+        
+        if (!currentTask) return;
+        
+        const newStatus = currentTask.completed ? 'to-do' : 'done';
+        
+        try {
+            // Update status on server
+            await api.updateTaskStatus(taskId, newStatus);
+            
+            // Update local state
+            if (listType === "class") {
+                setClasses(classes.map(cls => {
+                    if (cls.id === itemId) {
+                        return {
+                            ...cls,
+                            tasks: cls.tasks.map(t => {
+                                if (t.id === taskId) {
+                                    if (!t.completed) {
+                                        incrementBalloonCount();
+                                    } else {
+                                        decrementBalloonCount();
+                                    }
+                                    return { ...t, completed: !t.completed, status: newStatus };
+                                }
+                                return t;
+                            }),
+                        };
+                    }
+                    return cls;
+                }));
+            } else {
+                // Update group task within the class
+                setClasses(classes.map(cls => {
+                    if (cls.groups?.some(g => g.id === itemId)) {
+                        return {
+                            ...cls,
+                            groups: cls.groups.map(grp => {
+                                if (grp.id === itemId) {
+                                    return {
+                                        ...grp,
+                                        tasks: grp.tasks.map(t => {
+                                            if (t.id === taskId) {
+                                                if (!t.completed) {
+                                                    incrementBalloonCount();
+                                                } else {
+                                                    decrementBalloonCount();
+                                                }
+                                                return { ...t, completed: !t.completed, status: newStatus };
+                                            }
+                                            return t;
+                                        }),
+                                    };
+                                }
+                                return grp;
+                            }),
+                        };
+                    }
+                    return cls;
+                }));
+            }
+            
+            toast.success(newStatus === 'done' ? 'Task completed!' : 'Task marked as to-do');
+        } catch (err) {
+            console.error('Error updating task:', err);
+            toast.error('Failed to update task status');
         }
     };
 
@@ -210,8 +357,18 @@ export function StudentDashboard() {
             </header>
 
             <main className="student-main">
-                {/* Top Section - House and Badges Side by Side */}
-                <div className="top-section">
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <p>Loading your adventure book...</p>
+                    </div>
+                ) : error ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#C44536' }}>
+                        <p>Error: {error}</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Top Section - House and Badges Side by Side */}
+                        <div className="top-section">
                     {/* Left - House with Balloons */}
                     <div className="house-balloons-wrapper">
                         <HouseWithBalloons balloonCount={weeklyCompletedTasks} weeklyGoal={weeklyGoal} />
@@ -288,75 +445,108 @@ export function StudentDashboard() {
                     </div>
                     <div className="stat-card stat-card-teams">
                         <p className="stat-label">👥 Expedition Teams</p>
-                        <h2 className="stat-value">{groups.length}</h2>
+                        <h2 className="stat-value">
+                            {classes.reduce((acc, cls) => acc + (cls.groups?.length || 0), 0)}
+                        </h2>
                     </div>
                     <div className="stat-card stat-card-quests">
                         <p className="stat-label">🗺️ Quests</p>
                         <h2 className="stat-value">
-                            {classes.reduce((acc, cls) => acc + cls.tasks.length, 0) + groups.reduce((acc, g) => acc + g.tasks.length, 0)}
+                            {classes.reduce((acc, cls) => {
+                                const classTasks = cls.tasks.length;
+                                const groupTasks = cls.groups?.reduce((gAcc, g) => gAcc + g.tasks.length, 0) || 0;
+                                return acc + classTasks + groupTasks;
+                            }, 0)}
                         </h2>
                     </div>
                     <div className="stat-card stat-card-completed">
                         <p className="stat-label">✅ Completed</p>
                         <h2 className="stat-value">
-                            {classes.reduce((acc, cls) => acc + cls.tasks.filter(t => t.completed).length, 0) +
-                                groups.reduce((acc, g) => acc + g.tasks.filter(t => t.completed).length, 0)}
+                            {classes.reduce((acc, cls) => {
+                                const completedClassTasks = cls.tasks.filter(t => t.completed).length;
+                                const completedGroupTasks = cls.groups?.reduce((gAcc, g) => 
+                                    gAcc + g.tasks.filter(t => t.completed).length, 0) || 0;
+                                return acc + completedClassTasks + completedGroupTasks;
+                            }, 0)}
                         </h2>
                     </div>
                 </div>
 
                 <div className="tasks-container">
                     {classes.map(cls => (
-                        <div key={cls.id} className="task-card task-card-class">
-                            <div className="task-card-texture task-card-texture-class" />
-                            <div className="task-card-content">
-                                <h3 className="task-card-header task-card-header-class">📖 {cls.name}</h3>
-                                <ul className="task-list">
-                                    {cls.tasks.map(task => (
-                                        <li 
-                                            key={task.id} 
-                                            className={`task-item task-item-class ${task.completed ? 'task-item-class-completed' : 'task-item-class-incomplete'}`}
-                                        >
-                                            <span className={`task-title task-title-class ${task.completed ? 'task-title-completed' : ''}`}>
-                                                {task.title}
-                                            </span>
-                                            <CheckSquare 
-                                                size={24}
-                                                className={`task-checkbox ${task.completed ? 'task-checkbox-class-completed' : 'task-checkbox-class-incomplete'}`}
-                                                onClick={() => toggleTask("class", cls.id, task.id)} 
-                                            />
-                                        </li>
-                                    ))}
-                                </ul>
+                        <div key={cls.id} className="class-section">
+                            {/* Class-level tasks */}
+                            <div className="task-card task-card-class">
+                                <div className="task-card-texture task-card-texture-class" />
+                                <div className="task-card-content">
+                                    <h3 className="task-card-header task-card-header-class">📖 {cls.name}</h3>
+                                    {cls.tasks.length > 0 ? (
+                                        <ul className="task-list">
+                                            {cls.tasks.map(task => (
+                                                <li 
+                                                    key={task.id} 
+                                                    className={`task-item task-item-class ${task.completed ? 'task-item-class-completed' : 'task-item-class-incomplete'}`}
+                                                >
+                                                    <span className={`task-title task-title-class ${task.completed ? 'task-title-completed' : ''}`}>
+                                                        {task.title}
+                                                    </span>
+                                                    <CheckSquare 
+                                                        size={24}
+                                                        className={`task-checkbox ${task.completed ? 'task-checkbox-class-completed' : 'task-checkbox-class-incomplete'}`}
+                                                        onClick={() => toggleTask("class", cls.id, task.id)} 
+                                                    />
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p style={{ padding: '10px', color: '#666', fontStyle: 'italic' }}>
+                                            No class-level tasks assigned yet
+                                        </p>
+                                    )}
+                                </div>
                             </div>
+                            
+                            {/* Groups under this class */}
+                            {cls.groups && cls.groups.length > 0 && (
+                                <div className="groups-section" style={{ marginLeft: '20px', marginTop: '10px' }}>
+                                    {cls.groups.map(grp => (
+                                        <div key={grp.id} className="task-card task-card-group">
+                                            <div className="task-card-texture task-card-texture-group" />
+                                            <div className="task-card-content">
+                                                <h3 className="task-card-header task-card-header-group">👥 {grp.name}</h3>
+                                                {grp.tasks.length > 0 ? (
+                                                    <ul className="task-list">
+                                                        {grp.tasks.map(task => (
+                                                            <li 
+                                                                key={task.id} 
+                                                                className={`task-item task-item-group ${task.completed ? 'task-item-group-completed' : 'task-item-group-incomplete'}`}
+                                                            >
+                                                                <span className={`task-title task-title-group ${task.completed ? 'task-title-completed' : ''}`}>
+                                                                    {task.title}
+                                                                </span>
+                                                                <CheckSquare 
+                                                                    size={24}
+                                                                    className={`task-checkbox ${task.completed ? 'task-checkbox-group-completed' : 'task-checkbox-group-incomplete'}`}
+                                                                    onClick={() => toggleTask("group", grp.id, task.id)} 
+                                                                />
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : (
+                                                    <p style={{ padding: '10px', color: '#666', fontStyle: 'italic' }}>
+                                                        No group tasks assigned yet
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
-                    {groups.map(grp => (
-                        <div key={grp.id} className="task-card task-card-group">
-                            <div className="task-card-texture task-card-texture-group" />
-                            <div className="task-card-content">
-                                <h3 className="task-card-header task-card-header-group">👥 {grp.name}</h3>
-                                <ul className="task-list">
-                                    {grp.tasks.map(task => (
-                                        <li 
-                                            key={task.id} 
-                                            className={`task-item task-item-group ${task.completed ? 'task-item-group-completed' : 'task-item-group-incomplete'}`}
-                                        >
-                                            <span className={`task-title task-title-group ${task.completed ? 'task-title-completed' : ''}`}>
-                                                {task.title}
-                                            </span>
-                                            <CheckSquare 
-                                                size={24}
-                                                className={`task-checkbox ${task.completed ? 'task-checkbox-group-completed' : 'task-checkbox-group-incomplete'}`}
-                                                onClick={() => toggleTask("group", grp.id, task.id)} 
-                                            />
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </main>
         </div>
     );
