@@ -87,7 +87,7 @@ router.post("/:groupId/add", auth, async (req, res) => {
             return res.status(404).json({ error: "Group not found" });
         }
 
-        if (!group.members.includes(user._id)) {
+        if (!group.members.some(id => id.toString() === user._id.toString())) {
             group.members.push(user._id);
             await group.save();
         }
@@ -124,6 +124,25 @@ router.post("/:groupId/remove", auth, async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// =============================
+// CLEANUP - REMOVE DUPLICATE MEMBERS (TEMPORARY)
+// =============================
+router.post("/cleanup", async (req, res) => {
+    const groups = await Group.find();
+
+    for (let group of groups) {
+        group.members = [
+            ...new Map(
+                group.members.map(id => [id.toString(), id])
+            ).values()
+        ];
+
+        await group.save();
+    }
+
+    res.json({ message: "Duplicates removed" });
 });
 
 module.exports = router;

@@ -525,10 +525,17 @@ export function ProfessorDashboard() {
                                                     <strong style={{ color: '#666', fontSize: '0.9rem' }}>Members:</strong>
                                                     {group.members?.length > 0 ? (
                                                         <div className="group-members">
-                                                            {group.members.map((member, i) => (
-                                                                <div key={member._id ?? member ?? i} className="member-badge">
+                                                            {[...new Map(
+                                                                group.members
+                                                                    ?.filter(member => member?.role !== "professor")
+                                                                    .map(m => [(m?._id || m)?.toString(), m])
+                                                            ).values()].map((member, i) => (
+                                                                <div
+                                                                    key={(member?._id || member)?.toString() || i}
+                                                                    className="member-badge"
+                                                                >
                                                                     <Users size={14} />
-                                                                    {member.username ?? member}
+                                                                    {member?.username || member?._id || member}
                                                                 </div>
                                                             ))}
                                                         </div>
