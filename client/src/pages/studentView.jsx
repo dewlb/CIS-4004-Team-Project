@@ -90,8 +90,8 @@ export function StudentDashboard() {
                                 id: task._id,
                                 title: task.title,
                                 description: task.description,
-                                completed: task.status === 'done',
-                                status: task.status,
+                                completed: task.studentStatus === 'done' || task.completed, // Use studentStatus if available
+                                status: task.studentStatus || task.status, // Use individual student status
                                 dueDate: task.dueDate,
                             }))
                         };
@@ -104,8 +104,8 @@ export function StudentDashboard() {
                             id: task._id,
                             title: task.title,
                             description: task.description,
-                            completed: task.status === 'done',
-                            status: task.status,
+                            completed: task.studentStatus === 'done' || task.completed, // Use studentStatus if available
+                            status: task.studentStatus || task.status, // Use individual student status
                             dueDate: task.dueDate,
                         })),
                         groups: groupsWithTasks

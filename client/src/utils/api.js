@@ -54,6 +54,13 @@ export const api = {
       body: JSON.stringify({ status }),
     }),
   
+  // Groups
+  removeMemberFromGroup: (groupId, userId) =>
+    apiRequest(`/groups/${groupId}/remove`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+  
   // Badges
   getBadges: () => apiRequest('/badges/me'),
   checkBadges: () => apiRequest('/badges/check', { method: 'POST' }),

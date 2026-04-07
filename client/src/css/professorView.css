@@ -335,10 +335,34 @@ button {
   border-radius: 2rem;
   font-size: 0.9rem;
   color: #005A9C;
+  position: relative;
 }
 
 .member-badge svg {
   color: #007AFF;
+}
+
+.member-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  color: #999;
+  transition: color 0.2s ease;
+  border-radius: 50%;
+}
+
+.member-remove-btn:hover {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.member-remove-btn svg {
+  color: inherit;
 }
 
 .empty-state {

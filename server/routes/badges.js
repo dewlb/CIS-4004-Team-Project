@@ -3,6 +3,7 @@ const router = express.Router();
 
 const UserBadge = require("../models/UserBadge");
 const Task = require("../models/Task");
+const StudentTaskProgress = require("../models/StudentTaskProgress");
 const auth = require("../middleware/auth");
 
 const availableBadges = require("../utils/badges");
@@ -41,17 +42,13 @@ router.post("/check", auth, async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // count completed tasks
-        const completedTasks = await Task.find({
-            status: "done",
-            $or: [
-                { assignedToUser: userId },
-                { assignedToClass: { $exists: true } },
-                { assignedToGroup: { $exists: true } }
-            ]
+        // Count completed tasks based on per-student progress
+        const completedProgress = await StudentTaskProgress.find({
+            studentId: userId,
+            status: "done"
         });
 
-        const count = completedTasks.length;
+        const count = completedProgress.length;
 
         let newlyEarned = [];
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LogOut, Plus, Trash2, Users, BookOpen, UserPlus } from "lucide-react";
+import { LogOut, Plus, Trash2, Users, BookOpen, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { SearchableDropdown } from "../components/SearchableDropdown";
 import "../css/professorView.css";
@@ -375,6 +375,37 @@ export function ProfessorDashboard() {
     };
 
     // =============================
+    // REMOVE MEMBER FROM GROUP
+    // =============================
+    const removeMemberFromGroup = async (groupId, memberId) => {
+        if (!groupId || !memberId) return;
+
+        try {
+            const res = await fetch(`/api/groups/${groupId}/remove`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId: memberId })
+            });
+
+            const data = await parseJSON(res);
+
+            if (res.ok) {
+                toast.success("Member removed from group!");
+                // Refresh the class data to update the UI
+                handleSelectClass(selectedClass);
+            } else {
+                toast.error(data?.error || "Failed to remove member");
+            }
+        } catch (err) {
+            console.error("Error removing member from group:", err);
+            toast.error("Failed to remove member from group");
+        }
+    };
+
+    // =============================
     // REMOVE STUDENT FROM CLASS
     // =============================
     const removeStudent = async (studentId) => {
@@ -557,6 +588,45 @@ export function ProfessorDashboard() {
                                     </div>
                                 </div>
 
+                                {/* ================= CLASS TASK CREATION ================= */}
+                        <div className="form-group" style={{ marginTop: '1rem' }}>
+                            <h3>📝 Create Task for Entire Class</h3>
+                            <input
+                                className="task-input"
+                                placeholder="Task title"
+                                value={taskInputs[selectedClass._id]?.title || ""}
+                                onChange={(e) =>
+                                    setTaskInputs(prev => ({
+                                        ...prev,
+                                        [selectedClass._id]: {
+                                            ...(prev[selectedClass._id] || {}),
+                                            title: e.target.value
+                                        }
+                                    }))
+                                }
+                            />
+                            <input
+                                className="task-input"
+                                placeholder="Description"
+                                value={taskInputs[selectedClass._id]?.description || ""}
+                                onChange={(e) =>
+                                    setTaskInputs(prev => ({
+                                        ...prev,
+                                        [selectedClass._id]: {
+                                            ...(prev[selectedClass._id] || {}),
+                                            description: e.target.value
+                                        }
+                                    }))
+                                }
+                            />
+                            <button
+                                onClick={() => createTask(selectedClass._id, "class")}
+                                className="btn-primary"
+                            >
+                                <Plus size={16} /> Create Task
+                            </button>
+                        </div>
+
                                 <div className="form-group">
                                     <label htmlFor="groupName">Create New Group</label>
                                     <div className="input-with-button">
@@ -575,44 +645,7 @@ export function ProfessorDashboard() {
                             </div>
                         </div>
 
-                        {/* ================= CLASS TASK CREATION ================= */}
-                        <div className="form-group" style={{ marginTop: '1rem' }}>
-                            <h3>📝 Create Task for Entire Class</h3>
-                            <input
-                                placeholder="Task title"
-                                value={taskInputs[selectedClass._id]?.title || ""}
-                                onChange={(e) =>
-                                    setTaskInputs(prev => ({
-                                        ...prev,
-                                        [selectedClass._id]: {
-                                            ...(prev[selectedClass._id] || {}),
-                                            title: e.target.value
-                                        }
-                                    }))
-                                }
-                                style={{ marginBottom: '0.75rem' }}
-                            />
-                            <input
-                                placeholder="Description"
-                                value={taskInputs[selectedClass._id]?.description || ""}
-                                onChange={(e) =>
-                                    setTaskInputs(prev => ({
-                                        ...prev,
-                                        [selectedClass._id]: {
-                                            ...(prev[selectedClass._id] || {}),
-                                            description: e.target.value
-                                        }
-                                    }))
-                                }
-                                style={{ marginBottom: '0.75rem' }}
-                            />
-                            <button
-                                onClick={() => createTask(selectedClass._id, "class")} // ✅ explicitly set type to "class"
-                                className="btn-secondary"
-                            >
-                                <Plus size={16} /> Create Task
-                            </button>
-                        </div>
+                        
 
                         {/* ================= CLASS TASK LIST ================= */}
                         <div className="card" style={{ marginTop: '1rem' }}>
@@ -691,6 +724,13 @@ export function ProfessorDashboard() {
                                                                 >
                                                                     <Users size={14} />
                                                                     {member?.username || member?._id || member}
+                                                                    <button
+                                                                        className="member-remove-btn"
+                                                                        onClick={() => removeMemberFromGroup(group._id, (member?._id || member))}
+                                                                        title="Remove member"
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -731,7 +771,6 @@ export function ProfessorDashboard() {
                                                 <div className="form-group">
                                                     <h4>📝 Create Task</h4>
                                                     <input
-
                                                         className="task-input"
                                                         placeholder="Task title"
                                                         value={taskInputs[group._id]?.title || ""}
@@ -758,7 +797,6 @@ export function ProfessorDashboard() {
                                                                 }
                                                             }))
                                                         }
-                                                        style={{ marginBottom: '0.75rem' }}
                                                     />
                                                     <button 
                                                         onClick={() => createTask(group._id)}
