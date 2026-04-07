@@ -41,6 +41,10 @@ From the `client` folder, also in your terminal, run:
 npm run dev
 ```
 
+Front end can be accessed at local host port 5173 and backend is port 8080.
+
+Our Mongo DB collections include Users, Groups, Classes, Tasks, and UserBadge.
+
 ## Team Workflow
 To avoid conflicts, do not work directly on the `main` branch.
 
