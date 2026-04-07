@@ -13,7 +13,8 @@ export function HouseWithBalloons({ balloonCount, weeklyGoal = 10 }) {
     }, [balloonCount]);
 
     // Calculate progress as a percentage (0-100%)
-    const progress = Math.min((balloonCount / weeklyGoal) * 100, 100);
+    // Prevent division by zero
+    const progress = weeklyGoal > 0 ? Math.min((balloonCount / weeklyGoal) * 100, 100) : 0;
 
     return (
     <div className="house-container">
@@ -25,7 +26,7 @@ export function HouseWithBalloons({ balloonCount, weeklyGoal = 10 }) {
         
         {/* Progress indicator */}
         <div className="progress-indicator">
-            <div className="progress-text">{balloonCount} / {weeklyGoal} tasks</div>
+            <div className="progress-text">{balloonCount} / {weeklyGoal} quests</div>
             <div className="progress-percentage">{Math.round(progress)}%</div>
         </div>
 

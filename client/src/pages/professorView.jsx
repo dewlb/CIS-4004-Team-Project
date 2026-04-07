@@ -465,7 +465,7 @@ export function ProfessorDashboard() {
                                                             style={{ cursor: "pointer", textDecoration: "underline" }}
                                                             onClick={() => handleSelectClass(cls, "students")}
                                                             >
-                                                            {cls.students?.length - 1 || 0} Students
+                                                            {Math.max(0, (cls.students?.length || 0) - 1)} Students
                                                         </span>
                                                     </div>
                                                     <div className="class-stat">

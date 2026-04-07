@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Users, LogOut, Clock, Award, CheckSquare } from "lucide-react";
+import { BookOpen, Users, LogOut, Clock, Award, CheckSquare, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { HouseWithBalloons } from "../components/HouseWithBalloons";
 import api from "../utils/api";
@@ -21,6 +21,8 @@ export function StudentDashboard() {
     const navigate = useNavigate();
     const [classes, setClasses] = useState([]);
     const [groups, setGroups] = useState([]);
+    const [deletedTasks, setDeletedTasks] = useState([]);
+    const [showTrash, setShowTrash] = useState(false);
     const [weeklyCompletedTasks, setWeeklyCompletedTasks] = useState(0);
     const [earnedBadges, setEarnedBadges] = useState([]);
     const [weeklyGoal] = useState(10);
@@ -340,6 +342,125 @@ export function StudentDashboard() {
         }
     };
 
+    const deleteTask = async (listType, itemId, taskId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`/api/tasks/${taskId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "Failed to delete task");
+            }
+
+            // Remove task from local state
+            if (listType === "class") {
+                setClasses(classes.map(cls => {
+                    if (cls.id === itemId) {
+                        return {
+                            ...cls,
+                            tasks: cls.tasks.filter(t => t.id !== taskId)
+                        };
+                    }
+                    return cls;
+                }));
+            } else {
+                setClasses(classes.map(cls => {
+                    if (cls.groups?.some(g => g.id === itemId)) {
+                        return {
+                            ...cls,
+                            groups: cls.groups.map(grp => {
+                                if (grp.id === itemId) {
+                                    return {
+                                        ...grp,
+                                        tasks: grp.tasks.filter(t => t.id !== taskId)
+                                    };
+                                }
+                                return grp;
+                            })
+                        };
+                    }
+                    return cls;
+                }));
+            }
+
+            toast.success("Task deleted successfully");
+            
+            // Refresh deleted tasks if trash is open
+            if (showTrash) {
+                fetchDeletedTasks();
+            }
+        } catch (err) {
+            console.error("Error deleting task:", err);
+            toast.error(err.message || "Failed to delete task");
+        }
+    };
+
+    const fetchDeletedTasks = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch("/api/tasks/deleted/all", {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch deleted tasks");
+            }
+
+            const data = await response.json();
+            setDeletedTasks(data.map(task => ({
+                id: task._id,
+                title: task.title,
+                description: task.description,
+                deletedAt: task.deletedAt
+            })));
+        } catch (err) {
+            console.error("Error fetching deleted tasks:", err);
+            toast.error("Failed to load deleted tasks");
+        }
+    };
+
+    const restoreTask = async (taskId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`/api/tasks/${taskId}/restore`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "Failed to restore task");
+            }
+
+            toast.success("Task restored successfully");
+            
+            // Refresh both task lists
+            fetchDeletedTasks();
+            window.location.reload(); // Refresh to show restored task
+        } catch (err) {
+            console.error("Error restoring task:", err);
+            toast.error(err.message || "Failed to restore task");
+        }
+    };
+
+    const toggleTrash = () => {
+        if (!showTrash) {
+            fetchDeletedTasks();
+        }
+        setShowTrash(!showTrash);
+    };
+
     const handleLogout = () => {
         window.location.href = "/";
     };
@@ -354,9 +475,26 @@ export function StudentDashboard() {
                         <small className="header-subtitle">Wilderness Explorer Dashboard</small>
                     </div>
                 </div>
-                <button onClick={handleLogout} className="logout-button">
-                    <LogOut size={18} /> Logout
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={toggleTrash} className="trash-button" style={{ 
+              
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontWeight: '500',
+                        transition: 'background 0.2s'
+                    }}>
+                        <Trash2 size={18} /> {showTrash ? 'Hide Trash' : 'Trash'}
+                    </button>
+                    <button onClick={handleLogout} className="logout-button">
+                        <LogOut size={18} /> Logout
+                    </button>
+                </div>
             </header>
 
             <main className="student-main">
@@ -374,7 +512,19 @@ export function StudentDashboard() {
                         <div className="top-section">
                     {/* Left - House with Balloons */}
                     <div className="house-balloons-wrapper">
-                        <HouseWithBalloons balloonCount={weeklyCompletedTasks} weeklyGoal={weeklyGoal} />
+                        <HouseWithBalloons 
+                            balloonCount={classes.reduce((acc, cls) => {
+                                const completedClassTasks = cls.tasks.filter(t => t.completed).length;
+                                const completedGroupTasks = cls.groups?.reduce((gAcc, g) => 
+                                    gAcc + g.tasks.filter(t => t.completed).length, 0) || 0;
+                                return acc + completedClassTasks + completedGroupTasks;
+                            }, 0)}
+                            weeklyGoal={classes.reduce((acc, cls) => {
+                                const classTasks = cls.tasks.length;
+                                const groupTasks = cls.groups?.reduce((gAcc, g) => gAcc + g.tasks.length, 0) || 0;
+                                return acc + classTasks + groupTasks;
+                            }, 0)}
+                        />
                     </div>
 
                     {/* Right - Badges */}
@@ -493,11 +643,26 @@ export function StudentDashboard() {
                                                     <span className={`task-title task-title-class ${task.completed ? 'task-title-completed' : ''}`}>
                                                         {task.title}
                                                     </span>
-                                                    <CheckSquare 
-                                                        size={24}
-                                                        className={`task-checkbox ${task.completed ? 'task-checkbox-class-completed' : 'task-checkbox-class-incomplete'}`}
-                                                        onClick={() => toggleTask("class", cls.id, task.id)} 
-                                                    />
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                        {task.completed && (
+                                                            <Trash2 
+                                                                size={20}
+                                                                style={{ 
+                                                                    cursor: 'pointer',
+                                                                    color: '#C44536',
+                                                                    transition: 'transform 0.2s'
+                                                                }}
+                                                                onClick={() => deleteTask("class", cls.id, task.id)}
+                                                                onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                                                                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                                            />
+                                                        )}
+                                                        <CheckSquare 
+                                                            size={24}
+                                                            className={`task-checkbox ${task.completed ? 'task-checkbox-class-completed' : 'task-checkbox-class-incomplete'}`}
+                                                            onClick={() => toggleTask("class", cls.id, task.id)} 
+                                                        />
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>
@@ -525,11 +690,26 @@ export function StudentDashboard() {
                                                                 <span className={`task-title task-title-group ${task.completed ? 'task-title-completed' : ''}`}>
                                                                     {task.title}
                                                                 </span>
-                                                                <CheckSquare 
-                                                                    size={24}
-                                                                    className={`task-checkbox ${task.completed ? 'task-checkbox-group-completed' : 'task-checkbox-group-incomplete'}`}
-                                                                    onClick={() => toggleTask("group", grp.id, task.id)} 
-                                                                />
+                                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                    {task.completed && (
+                                                                        <Trash2 
+                                                                            size={20}
+                                                                            style={{ 
+                                                                                cursor: 'pointer',
+                                                                                color: '#C44536',
+                                                                                transition: 'transform 0.2s'
+                                                                            }}
+                                                                            onClick={() => deleteTask("group", grp.id, task.id)}
+                                                                            onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                                                                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                                                        />
+                                                                    )}
+                                                                    <CheckSquare 
+                                                                        size={24}
+                                                                        className={`task-checkbox ${task.completed ? 'task-checkbox-group-completed' : 'task-checkbox-group-incomplete'}`}
+                                                                        onClick={() => toggleTask("group", grp.id, task.id)} 
+                                                                    />
+                                                                </div>
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -549,6 +729,113 @@ export function StudentDashboard() {
                         </div>
                     ))}
                         </div>
+
+                {/* Trash Modal */}
+                {showTrash && (
+                    <div style={{
+                        position: 'fixed',
+                        top: '0',
+                        left: '0',
+                        right: '0',
+                        bottom: '0',
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div style={{
+                            background: 'white',
+                            borderRadius: '12px',
+                            padding: '30px',
+                            maxWidth: '600px',
+                            width: '90%',
+                            maxHeight: '80vh',
+                            overflow: 'auto',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginBottom: '20px'
+                            }}>
+                                <h2 style={{ margin: 0, color: '#333', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Trash2 size={24} /> Deleted Tasks
+                                </h2>
+                                <button 
+                                    onClick={() => setShowTrash(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '24px',
+                                        cursor: 'pointer',
+                                        color: '#666'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            
+                            {deletedTasks.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                                    No deleted tasks
+                                </p>
+                            ) : (
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {deletedTasks.map(task => (
+                                        <li 
+                                            key={task.id}
+                                            style={{
+                                                background: '#f9f9f9',
+                                                padding: '15px',
+                                                marginBottom: '10px',
+                                                borderRadius: '8px',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <div>
+                                                <div style={{ fontWeight: '500', color: '#333' }}>
+                                                    {task.title}
+                                                </div>
+                                                {task.description && (
+                                                    <div style={{ fontSize: '14px', color: '#666', marginTop: '5px' }}>
+                                                        {task.description}
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+                                                    Deleted: {new Date(task.deletedAt).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => restoreTask(task.id)}
+                                                style={{
+                                                    background: 'rgb(22, 68, 191)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    padding: '8px 16px',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '5px',
+                                                    fontWeight: '500',
+                                                    transition: 'background 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => e.target.style.background = 'rgb(22, 68, 191)'}
+                                                onMouseLeave={(e) => e.target.style.background = 'rgb(22, 68, 191)'}
+                                            >
+                                                <RotateCcw size={16} /> Restore
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                )}
                     </>
                 )}
             </main>
